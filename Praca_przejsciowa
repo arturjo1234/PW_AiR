@@ -1,0 +1,146 @@
+#include<VarSpeedServo.h>
+
+VarSpeedServo ser1;
+VarSpeedServo ser2;
+VarSpeedServo ser3;
+VarSpeedServo ser4;
+VarSpeedServo ser5;
+VarSpeedServo ser6;
+int servoPin1 = 11;
+int servoPin2 =9;
+int servoPin3 =6;
+int servoPin4 =5;
+int servoPin5 =3;
+int servoPin6 =10;
+int n=0,c=0,licznik=0;
+int tab1[80];
+int tab2[80];
+int tab3[80];
+int tab4[80];
+int tab5[80];
+int tab6[80];
+int val1,val2,val3,val4,val5;
+int a=5;   
+
+void rob()   //funkcja odpowiedzialna za śledzenie ruchu Phantoma a następnie wysyłanie danych do manipulatora
+{
+val1=map(analogRead(A0)/a,60/a,900/a,0,180);
+val2=map(analogRead(A1)/a,140/a,960/a,0,180);
+val3=map(analogRead(A2)/a,600/a,0/a,0,140);
+val4=map(analogRead(A3)/a,200/a,900/a,0,180);
+ser1.write(val1);
+ser2.write(val2);
+ser3.write(val3);
+ser4.write(val4);
+ser6.write(map(720/15,0/15,1023/15,0,165));
+}
+
+void zapis() //Zapis pozycji po naciśnięciu przycisku
+{
+if(digitalRead(7)==LOW)
+  {
+  tab1[n]=ser1.read();
+  tab2[n]=ser2.read();
+  tab3[n]=ser3.read();
+  tab4[n]=ser4.read();
+  tab5[n]=ser5.read();
+  tab6[n]=ser6.read();
+  n++;
+  delay(500);    
+  }
+}
+
+void reset() //funkcja resetujaca zapisane pozycje 
+{
+  while(digitalRead(2)==LOW)
+  {
+    c++;
+    delay(100);
+    if(c==15)
+    {
+      n=0;
+      c=0;
+      ser1.write(100,60);
+      ser2.write(120,60);
+      ser3.write(80,60);
+      ser4.write(30);
+      ser1.wait();
+      ser2.wait();
+      ser3.wait();
+      ser4.wait();
+      ser4.write(140,60);
+      ser4.wait();
+      ser4.write(30,60);
+      ser4.wait();
+      ser4.write(140,60);
+      ser4.wait();
+      break;
+    }
+  }
+}
+
+void setup() {
+  Serial.begin(9600);
+  ser1.attach(servoPin1);
+  ser2.attach(servoPin2);
+  ser3.attach(servoPin3);
+  ser4.attach(servoPin4);
+  ser5.attach(servoPin5);
+  ser6.attach(servoPin6);
+pinMode(4,INPUT_PULLUP);
+pinMode(2,INPUT_PULLUP);
+pinMode(7,INPUT_PULLUP);
+ser5.write(80);
+}
+
+void loop() {
+c=0;
+rob();
+zapis();
+if(digitalRead(2)==LOW)
+{
+  reset();
+  for(int i=0;i<n;i++)
+  {
+  ser1.write(tab1[i], 20);
+  ser2.write(tab2[i], 20); 
+  ser3.write(tab3[i], 20);
+  ser4.write(tab4[i], 20);
+  ser5.write(tab5[i], 20);
+  ser6.write(tab6[i], 20);
+  ser1.wait();
+  ser2.wait();
+  ser3.wait();
+  ser4.wait();
+  ser5.wait();
+  ser6.wait();
+  delay(500); 
+  } 
+}
+
+val5=map(analogRead(A6),93,206,10,80);
+
+if(digitalRead(4)==LOW){  //funkcja odpowiedzialna za zamkniecie grippera
+for(int i=80;i>=10;i--)
+{
+  val5=map(analogRead(A6),93,206,10,80);
+  ser5.write(i);
+  delay(60);
+  
+  if(val5-ser5.read()>5 && val5-ser5.read()<10){ 
+    val5=map(analogRead(A6),93,206,10,80);
+    while(digitalRead(4)==HIGH){
+    ser5.write(val5);
+    rob();
+    zapis();
+    if(digitalRead(4)==LOW){
+      goto kon; 
+    }
+    }   
+    }  
+  }
+ kon: 
+ delay(200); 
+ser5.write(80);
+ }
+}
